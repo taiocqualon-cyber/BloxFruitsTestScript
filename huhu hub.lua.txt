@@ -1,0 +1,172 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+local backpack = player:WaitForChild("Backpack")
+
+-- ================== GUI ==================
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "VIPUltimateHub"
+
+local HubButton = Instance.new("TextButton", ScreenGui)
+HubButton.Size = UDim2.new(0,120,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "VIP Ultimate Hub"
+
+local MenuFrame = Instance.new("Frame", ScreenGui)
+MenuFrame.Size = UDim2.new(0,450,0,550)
+MenuFrame.Position = UDim2.new(0,160,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+MenuFrame.Visible = false
+
+HubButton.MouseButton1Click:Connect(function()
+	MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- ================== Drag GUI ==================
+local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+local function update(input)
+	local delta = input.Position - dragStart
+	MenuFrame.Position = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+end
+
+MenuFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MenuFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+MenuFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- ================== Tabs ==================
+local Tabs = {}
+local function createTab(name)
+	local btn = Instance.new("TextButton", MenuFrame)
+	btn.Size = UDim2.new(1,-20,0,50)
+	btn.Position = UDim2.new(0,10,0,50*(#MenuFrame:GetChildren()))
+	btn.Text = name
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	Tabs[name] = btn
+	return btn
+end
+
+-- Toggle Variables
+local autoFarmNPC, autoAttack, autoCollectChest, autoFarmSea, autoFly = false, false, false, false, false
+
+-- Tabs
+createTab("Farm Quái").MouseButton1Click:Connect(function() autoFarmNPC = not autoFarmNPC end)
+createTab("Auto Attack").MouseButton1Click:Connect(function() autoAttack = not autoAttack end)
+createTab("Nhặt Rương / Trái").MouseButton1Click:Connect(function() autoCollectChest = not autoCollectChest end)
+createTab("Farm Sea + Teleport").MouseButton1Click:Connect(function() autoFarmSea = not autoFarmSea end)
+createTab("Bay / Fly").MouseButton1Click:Connect(function() autoFly = not autoFly humanoid.PlatformStand = autoFly end)
+
+-- ================== Helper Functions ==================
+local function teleportTween(pos, duration)
+	local tween = TweenService:Create(rootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos + Vector3.new(0,3,0))})
+	tween:Play()
+	tween.Completed:Wait()
+end
+
+-- Placeholder RemoteEvents server VIP
+local MeleeEvent = ReplicatedStorage:FindFirstChild("MeleeEvent") -- điền RemoteEvent thật server VIP
+local ChestEvent = ReplicatedStorage:FindFirstChild("ChestEvent") -- nếu server VIP có event nhặt rương
+local QuestEvent = ReplicatedStorage:FindFirstChild("SeaQuestEvent") -- nếu server VIP có event quest
+
+local function attackNPC(npc)
+	if npc and npc:FindFirstChild("HumanoidRootPart") and MeleeEvent then
+		MeleeEvent:FireServer(npc.HumanoidRootPart.Position)
+	else
+		print("Attack local test:", npc.Name)
+	end
+end
+
+local function collectItem(item)
+	if item and ChestEvent then
+		ChestEvent:FireServer(item.Position)
+	else
+		print("Collect local test:", item.Name)
+	end
+end
+
+local seaIslands = {
+	Vector3.new(100,10,200),
+	Vector3.new(500,10,300),
+	Vector3.new(900,10,100)
+}
+
+-- ================== Auto Logic ==================
+RunService.RenderStepped:Connect(function()
+	-- Auto Fly
+	if autoFly then
+		local cam = Workspace.CurrentCamera
+		local moveDir = Vector3.new()
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+		if moveDir.Magnitude > 0 then
+			rootPart.CFrame = rootPart.CFrame + moveDir.Unit * 20
+		end
+	end
+
+	-- Auto Farm NPC
+	if autoFarmNPC then
+		for _, npc in pairs(Workspace:GetDescendants()) do
+			if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc ~= character then
+				teleportTween(npc.HumanoidRootPart.Position, 0.2)
+				if autoAttack then attackNPC(npc) end
+			end
+		end
+	end
+
+	-- Auto Collect Chest / Fruit
+	if autoCollectChest then
+		for _, item in pairs(Workspace:GetDescendants()) do
+			if item:IsA("Part") and (item.Name:lower():find("chest") or item.Name:lower():find("fruit")) then
+				if (item.Position - rootPart.Position).Magnitude < 150 then
+					teleportTween(item.Position, 0.2)
+					collectItem(item)
+				end
+			end
+		end
+	end
+
+	-- Auto Farm Sea + Teleport
+	if autoFarmSea then
+		for _, pos in pairs(seaIslands) do
+			teleportTween(pos, 0.3)
+			if QuestEvent then
+				QuestEvent:FireServer() -- gọi event quest
+			end
+		end
+	end
+end)
