@@ -1,0 +1,155 @@
+-- VIP TabHub Full Auto + Auto Attack + Tween
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+local backpack = player:WaitForChild("Backpack")
+
+-- ================== GUI ==================
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "VIPTabHubUltimate"
+
+local HubButton = Instance.new("TextButton", ScreenGui)
+HubButton.Size = UDim2.new(0,120,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "VIP Tab Hub"
+
+local MenuFrame = Instance.new("Frame", ScreenGui)
+MenuFrame.Size = UDim2.new(0,360,0,500)
+MenuFrame.Position = UDim2.new(0,150,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+MenuFrame.Visible = false
+
+HubButton.MouseButton1Click:Connect(function()
+	MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- Drag Logic
+local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+local function update(input)
+	local delta = input.Position - dragStart
+	MenuFrame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+MenuFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MenuFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+MenuFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- ================== Tab Buttons ==================
+local Tabs = {}
+local function createTab(name)
+	local tabBtn = Instance.new("TextButton", MenuFrame)
+	tabBtn.Size = UDim2.new(1,-20,0,50)
+	tabBtn.Position = UDim2.new(0,10,0,50*(#MenuFrame:GetChildren()))
+	tabBtn.Text = name
+	tabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	tabBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	Tabs[name] = tabBtn
+	return tabBtn
+end
+
+-- Toggle variables
+local autoFarmNPC, autoCollectChest, ultraMove = false, false, false
+
+-- Tab creation
+createTab("Farm Quái + Attack").MouseButton1Click:Connect(function()
+	autoFarmNPC = not autoFarmNPC
+end)
+
+createTab("Nhặt Rương Rộng").MouseButton1Click:Connect(function()
+	autoCollectChest = not autoCollectChest
+end)
+
+createTab("Di chuyển + Teleport").MouseButton1Click:Connect(function()
+	ultraMove = not ultraMove
+end)
+
+-- ================== Helper Functions ==================
+local function teleportTween(pos, duration)
+	local tween = TweenService:Create(rootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos + Vector3.new(0,3,0))})
+	tween:Play()
+	tween.Completed:Wait()
+end
+
+-- Placeholder RemoteEvent (server VIP private)
+local MeleeEvent = ReplicatedStorage:FindFirstChild("MeleeEvent") -- điền RemoteEvent thật của server VIP
+
+local function attackTarget(npc)
+	if npc and npc:FindFirstChild("HumanoidRootPart") and MeleeEvent then
+		MeleeEvent:FireServer(npc.HumanoidRootPart.Position)
+	else
+		-- Local test
+		print("Đánh quái local test:", npc.Name)
+	end
+end
+
+-- ================== Full Auto Logic ==================
+RunService.RenderStepped:Connect(function()
+	-- Tab 1: Farm Quái + Auto Attack
+	if autoFarmNPC then
+		for _, npc in pairs(Workspace:GetDescendants()) do
+			if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc ~= character then
+				teleportTween(npc.HumanoidRootPart.Position, 0.2) -- tween mượt
+				attackTarget(npc)
+			end
+		end
+	end
+
+	-- Tab 2: Nhặt Rương rộng
+	if autoCollectChest then
+		for _, chest in pairs(Workspace:GetDescendants()) do
+			if chest:IsA("Part") and chest.Name:lower():find("chest") then
+				if (chest.Position - rootPart.Position).Magnitude < 150 then
+					teleportTween(chest.Position, 0.2)
+					print("Nhặt rương:", chest.Name)
+				end
+			end
+		end
+	end
+
+	-- Tab 3: Di chuyển + Teleport
+	if ultraMove then
+		-- Bạn tự định nghĩa vị trí các đảo
+		local islands = {
+			Vector3.new(100,10,200),
+			Vector3.new(500,10,300),
+			Vector3.new(900,10,100)
+		}
+		for _, pos in pairs(islands) do
+			teleportTween(pos, 0.3)
+		end
+	end
+end)
