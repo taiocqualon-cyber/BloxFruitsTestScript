@@ -1,0 +1,150 @@
+-- LocalScript: VIP Full Auto Ultimate with Auto Weapon Attack
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+local backpack = player:WaitForChild("Backpack")
+
+-- ================== GUI ==================
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local HubButton = Instance.new("TextButton", ScreenGui)
+HubButton.Size = UDim2.new(0,120,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "VIP Ultimate Hub"
+
+local MenuFrame = Instance.new("Frame", ScreenGui)
+MenuFrame.Size = UDim2.new(0,320,0,500)
+MenuFrame.Position = UDim2.new(0,150,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuFrame.Visible = false
+
+local title = Instance.new("TextLabel", MenuFrame)
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "VIP Full Auto Attack"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+
+-- ================== Toggle Buttons ==================
+local function createButton(name, callback)
+    local btn = Instance.new("TextButton", MenuFrame)
+    btn.Size = UDim2.new(1,-20,0,50)
+    btn.Position = UDim2.new(0,10,0,50*(#MenuFrame:GetChildren()))
+    btn.Text = name
+    btn.MouseButton1Click:Connect(callback)
+end
+
+local autoFarm, autoChest, autoFruit, autoLevel, flyEnabled, autoAttack = false, false, false, false, false, false
+
+createButton("Auto Farm Quái", function() autoFarm = not autoFarm end)
+createButton("Auto Nhặt Rương", function() autoChest = not autoChest end)
+createButton("Auto Nhặt Trái", function() autoFruit = not autoFruit end)
+createButton("Auto Level", function() autoLevel = not autoLevel end)
+createButton("Bay / Fly", function() flyEnabled = not flyEnabled humanoid.PlatformStand = flyEnabled end)
+createButton("Auto Attack Weapon", function() autoAttack = not autoAttack end)
+
+HubButton.MouseButton1Click:Connect(function()
+    MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- ================== Variables ==================
+local fakeLevel, fakeExp = 1, 0
+
+-- ================== Fly Logic ==================
+RunService.RenderStepped:Connect(function()
+    if flyEnabled then
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        if moveDir.Magnitude > 0 then
+            rootPart.CFrame = rootPart.CFrame + moveDir.Unit * 10
+        end
+    else
+        humanoid.PlatformStand = false
+    end
+end)
+
+-- ================== Helper Function ==================
+local function teleportTo(pos)
+    rootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
+end
+
+local function getEquippedWeapon()
+    for _, item in pairs(character:GetChildren()) do
+        if item:IsA("Tool") then
+            return item
+        end
+    end
+    for _, item in pairs(backpack:GetChildren()) do
+        if item:IsA("Tool") then
+            item.Parent = character -- equip
+            return item
+        end
+    end
+    return nil
+end
+
+local function attackTarget(target)
+    local weapon = getEquippedWeapon()
+    if weapon then
+        -- Local test: giả lập attack nhanh
+        print("Tấn công NPC:", target.Name, "với", weapon.Name)
+        -- Ở server VIP/private bạn có thể gọi event server nếu muốn damage thật
+    end
+end
+
+-- ================== Full Auto Logic ==================
+RunService.RenderStepped:Connect(function()
+    -- Auto Farm Quái + Auto Attack
+    if autoFarm then
+        for _, npc in pairs(workspace:GetDescendants()) do
+            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc ~= character then
+                teleportTo(npc.HumanoidRootPart.Position)
+                print("Di chuyển tới quái:", npc.Name)
+                if autoAttack then
+                    attackTarget(npc)
+                end
+            end
+        end
+    end
+
+    -- Auto Nhặt Rương
+    if autoChest then
+        for _, chest in pairs(workspace:GetDescendants()) do
+            if chest:IsA("Part") and chest.Name:lower():find("chest") then
+                if (chest.Position - rootPart.Position).Magnitude < 100 then
+                    teleportTo(chest.Position)
+                    print("Nhặt rương:", chest.Name)
+                end
+            end
+        end
+    end
+
+    -- Auto Nhặt Trái
+    if autoFruit then
+        for _, fruit in pairs(workspace:GetDescendants()) do
+            if fruit:IsA("Part") and fruit.Name:lower():find("fruit") then
+                if (fruit.Position - rootPart.Position).Magnitude < 100 then
+                    teleportTo(fruit.Position)
+                    print("Nhặt trái:", fruit.Name)
+                end
+            end
+        end
+    end
+
+    -- Auto Level Local
+    if autoLevel then
+        fakeExp = fakeExp + 5
+        if fakeExp >= 100 then
+            fakeLevel = fakeLevel + 1
+            fakeExp = 0
+        end
+        title.Text = "Level Local: "..fakeLevel.." | EXP: "..fakeExp
+    end
+end)
