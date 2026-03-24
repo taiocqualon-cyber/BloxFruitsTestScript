@@ -1,0 +1,66 @@
+-- Script Hub GUI test Blox Fruits
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Tăng tốc chạy + nhảy
+humanoid.WalkSpeed = 100
+humanoid.JumpPower = 100
+
+-- Bóng nổi (floating button)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TestHubGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local HubButton = Instance.new("ImageButton")
+HubButton.Name = "HubButton"
+HubButton.Size = UDim2.new(0, 80, 0, 80)
+HubButton.Position = UDim2.new(0, 20, 0, 100)
+HubButton.Image = "rbxassetid://7072715727" -- thay ID ảnh nếu muốn
+HubButton.BackgroundTransparency = 0.5
+HubButton.Parent = ScreenGui
+
+-- Menu GUI
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Size = UDim2.new(0, 300, 0, 400)
+MenuFrame.Position = UDim2.new(0, 120, 0, 100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuFrame.Visible = false
+MenuFrame.Parent = ScreenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "MyHub Script"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Parent = MenuFrame
+
+-- Tạo nút chức năng
+local function createButton(name, parent, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 50)
+    btn.Position = UDim2.new(0,10,0,50*(#parent:GetChildren()))
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = name
+    btn.Parent = parent
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Chức năng ví dụ
+createButton("Auto Farm Sea", MenuFrame, function()
+    print("Auto Farm Sea bật (local test)")
+end)
+createButton("Nhặt Rương", MenuFrame, function()
+    print("Nhặt Rương bật (local test)")
+end)
+createButton("Nhặt Trái Ác Quỷ", MenuFrame, function()
+    print("Nhặt Trái bật (local test)")
+end)
+
+-- Nút bật/tắt menu
+HubButton.MouseButton1Click:Connect(function()
+    MenuFrame.Visible = not MenuFrame.Visible
+end)
