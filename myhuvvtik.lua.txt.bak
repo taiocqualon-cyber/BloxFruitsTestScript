@@ -1,0 +1,81 @@
+-- LocalScript: MyHub Blox Fruits Test
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- GUI Hub
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoFarmGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local HubButton = Instance.new("TextButton")
+HubButton.Name = "HubButton"
+HubButton.Size = UDim2.new(0,100,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "MyHub"
+HubButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+HubButton.TextColor3 = Color3.fromRGB(255,255,255)
+HubButton.Parent = ScreenGui
+
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Size = UDim2.new(0,300,0,200)
+MenuFrame.Position = UDim2.new(0,140,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuFrame.Visible = false
+MenuFrame.Parent = ScreenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "Auto Farm Test"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Parent = MenuFrame
+
+-- Nút tạo chức năng
+local function createButton(name, parent, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-20,0,50)
+    btn.Position = UDim2.new(0,10,0,50*(#parent:GetChildren()))
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Parent = parent
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Biến toggle
+local autoClickFrame = false
+local autoLevel = false
+
+-- Nút Auto Click Frame
+createButton("Auto Click Frame", MenuFrame, function()
+    autoClickFrame = not autoClickFrame
+    print("Auto Click Frame:", autoClickFrame)
+end)
+
+-- Nút Auto Level Test
+createButton("Auto Level", MenuFrame, function()
+    autoLevel = not autoLevel
+    print("Auto Level:", autoLevel)
+end)
+
+-- Bật/tắt menu
+HubButton.MouseButton1Click:Connect(function()
+    MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- Tính năng test Auto Click Frame & Auto Level (local)
+RunService.RenderStepped:Connect(function()
+    if autoClickFrame then
+        -- Tự động click test
+        print("Click frame... (local test)")
+    end
+    if autoLevel then
+        -- Tăng level test
+        print("Tăng level... (local test)")
+    end
+end)
