@@ -1,0 +1,177 @@
+-- LocalScript: VIP Advanced Hub with Teleport/Tween
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- ================== GUI ==================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VIPTweenHubGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Hub button
+local HubButton = Instance.new("TextButton")
+HubButton.Size = UDim2.new(0,100,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "VIP Hub"
+HubButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+HubButton.TextColor3 = Color3.fromRGB(255,255,255)
+HubButton.Parent = ScreenGui
+
+-- Menu Frame
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Size = UDim2.new(0,300,0,450)
+MenuFrame.Position = UDim2.new(0,140,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuFrame.Visible = false
+MenuFrame.Parent = ScreenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "VIP Tween Hub"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Parent = MenuFrame
+
+-- ================== Toggle Buttons ==================
+local function createButton(name, parent, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-20,0,50)
+    btn.Position = UDim2.new(0,10,0,50*(#parent:GetChildren()))
+    btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = name
+    btn.Parent = parent
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Toggle biến
+local autoFarm = false
+local autoChest = false
+local autoFruit = false
+local autoLevel = false
+local flyEnabled = false
+local tweenEnabled = true -- bật/tắt tween khi di chuyển
+
+createButton("Auto Farm Quái", MenuFrame, function()
+    autoFarm = not autoFarm
+end)
+
+createButton("Auto Nhặt Rương", MenuFrame, function()
+    autoChest = not autoChest
+end)
+
+createButton("Auto Nhặt Trái", MenuFrame, function()
+    autoFruit = not autoFruit
+end)
+
+createButton("Auto Level", MenuFrame, function()
+    autoLevel = not autoLevel
+end)
+
+createButton("Bay / Fly", MenuFrame, function()
+    flyEnabled = not flyEnabled
+end)
+
+createButton("Toggle Tween", MenuFrame, function()
+    tweenEnabled = not tweenEnabled
+end)
+
+-- Bật/tắt menu
+HubButton.MouseButton1Click:Connect(function()
+    MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- ================== Local Variables ==================
+local fakeLevel = 1
+local fakeExp = 0
+
+-- ================== Fly Logic ==================
+RunService.RenderStepped:Connect(function()
+    if flyEnabled then
+        humanoid.PlatformStand = true
+        local cam = workspace.CurrentCamera
+        local moveDirection = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + cam.CFrame.RightVector end
+        rootPart.CFrame = rootPart.CFrame + moveDirection.Unit * 2
+    else
+        humanoid.PlatformStand = false
+    end
+end)
+
+-- ================== Tween Move Function ==================
+local function moveToTween(targetPos, duration)
+    if tweenEnabled then
+        local tweenInfo = TweenInfo.new(duration or 0.5, Enum.EasingStyle.Linear)
+        local goal = {CFrame = CFrame.new(targetPos + Vector3.new(0,3,0))}
+        local tween = TweenService:Create(rootPart, tweenInfo, goal)
+        tween:Play()
+        tween.Completed:Wait()
+    else
+        rootPart.CFrame = CFrame.new(targetPos + Vector3.new(0,3,0))
+    end
+end
+
+-- ================== Auto Farm & Item ==================
+RunService.RenderStepped:Connect(function()
+    -- Auto Farm Quái
+    if autoFarm then
+        local closestNPC = nil
+        local shortestDistance = math.huge
+        for _, npc in pairs(workspace:GetDescendants()) do
+            if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc ~= character then
+                local dist = (npc.HumanoidRootPart.Position - rootPart.Position).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    closestNPC = npc
+                end
+            end
+        end
+        if closestNPC then
+            moveToTween(closestNPC.HumanoidRootPart.Position, shortestDistance/20)
+            print("Đấm quái: "..closestNPC.Name.." (local test)")
+        end
+    end
+
+    -- Auto Nhặt Rương
+    if autoChest then
+        for _, chest in pairs(workspace:GetDescendants()) do
+            if chest:IsA("Part") and chest.Name:lower():find("chest") then
+                if (chest.Position - rootPart.Position).Magnitude < 20 then
+                    moveToTween(chest.Position, 0.5)
+                    print("Nhặt rương: "..chest.Name.." (local test)")
+                end
+            end
+        end
+    end
+
+    -- Auto Nhặt Trái
+    if autoFruit then
+        for _, fruit in pairs(workspace:GetDescendants()) do
+            if fruit:IsA("Part") and fruit.Name:lower():find("fruit") then
+                if (fruit.Position - rootPart.Position).Magnitude < 20 then
+                    moveToTween(fruit.Position, 0.5)
+                    print("Nhặt trái: "..fruit.Name.." (local test)")
+                end
+            end
+        end
+    end
+
+    -- Auto Level
+    if autoLevel then
+        fakeExp = fakeExp + 0.1
+        if fakeExp >= 100 then
+            fakeLevel = fakeLevel + 1
+            fakeExp = 0
+        end
+        title.Text = "Level Local: "..fakeLevel.." | EXP: "..math.floor(fakeExp)
+    end
+end)
