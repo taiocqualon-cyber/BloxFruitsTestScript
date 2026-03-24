@@ -1,0 +1,35 @@
+-- Server Script: Auto Farm & Quest Handler
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+-- Tạo RemoteEvent nếu chưa có
+local farmEvent = ReplicatedStorage:FindFirstChild("AdminFarmEvent")
+if not farmEvent then
+    farmEvent = Instance.new("RemoteEvent")
+    farmEvent.Name = "AdminFarmEvent"
+    farmEvent.Parent = ReplicatedStorage
+end
+
+-- Danh sách NPC farm (admin chỉnh)
+local farmNPCNames = {"Bandit","Pirate","Marine","Zombie"}
+
+-- Hàm kiểm tra NPC farm
+local function isFarmNPC(npc)
+    return table.find(farmNPCNames, npc.Name) ~= nil
+end
+
+-- Nhận lệnh từ client
+farmEvent.OnServerEvent:Connect(function(player, action, npc)
+    if action == "AttackNPC" and npc and npc:IsA("Model") and npc:FindFirstChild("Humanoid") then
+        npc.Humanoid:TakeDamage(9999) -- gây damage cực mạnh
+    elseif action == "AcceptQuest" then
+        local questFolder = Workspace:FindFirstChild("Quests")
+        if questFolder then
+            for _, q in pairs(questFolder:GetChildren()) do
+                if q:FindFirstChild("Status") and q.Status.Value == "Available" then
+                    q.Status.Value = "Accepted"
+                end
+            end
+        end
+    end
+end)
