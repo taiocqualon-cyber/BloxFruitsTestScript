@@ -1,0 +1,91 @@
+-- Admin Auto Quest & Farm Script
+-- Chạy mọi server
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Toggle variables
+local autoFarm = false
+local autoQuest = false
+
+-- GUI cơ bản
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "AdminFarmHub"
+
+local FarmButton = Instance.new("TextButton", ScreenGui)
+FarmButton.Position = UDim2.new(0,20,0,100)
+FarmButton.Size = UDim2.new(0,150,0,50)
+FarmButton.Text = "Auto Farm: OFF"
+
+FarmButton.MouseButton1Click:Connect(function()
+	autoFarm = not autoFarm
+	FarmButton.Text = "Auto Farm: "..(autoFarm and "ON" or "OFF")
+end)
+
+local QuestButton = Instance.new("TextButton", ScreenGui)
+QuestButton.Position = UDim2.new(0,20,0,160)
+QuestButton.Size = UDim2.new(0,150,0,50)
+QuestButton.Text = "Auto Quest: OFF"
+
+QuestButton.MouseButton1Click:Connect(function()
+	autoQuest = not autoQuest
+	QuestButton.Text = "Auto Quest: "..(autoQuest and "ON" or "OFF")
+end)
+
+-- NPC farm list (admin có thể chỉnh)
+local farmNPCNames = {"Bandit","Pirate","Marine","Zombie"}
+
+-- Hàm kiểm tra NPC
+local function isFarmNPC(npc)
+	return table.find(farmNPCNames, npc.Name) ~= nil
+end
+
+-- Hàm attack NPC (với quyền admin)
+local function attackNPC(npc)
+	if npc and npc:FindFirstChild("HumanoidRootPart") then
+		-- Gây damage trực tiếp server-side
+		if npc:FindFirstChild("Humanoid") then
+			npc.Humanoid:TakeDamage(9999) -- attack mạnh
+		end
+	end
+end
+
+-- Hàm nhận quest
+local function acceptQuest()
+	-- Nếu có Folder Quest trong Workspace
+	local questFolder = Workspace:FindFirstChild("Quests")
+	if questFolder then
+		for _, q in pairs(questFolder:GetChildren()) do
+			if q:FindFirstChild("Status") and q.Status.Value == "Available" then
+				q.Status.Value = "Accepted"
+			end
+		end
+	end
+end
+
+-- Main Loop
+RunService.RenderStepped:Connect(function()
+	-- Auto Quest
+	if autoQuest then
+		acceptQuest()
+	end
+
+	-- Auto Farm NPC
+	if autoFarm then
+		for _, npc in pairs(Workspace:GetDescendants()) do
+			if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc ~= character and isFarmNPC(npc) then
+				-- Di chuyển gần NPC
+				rootPart.CFrame = CFrame.new(npc.HumanoidRootPart.Position + Vector3.new(0,3,0))
+				-- Gây damage trực tiếp
+				attackNPC(npc)
+			end
+		end
+	end
+end)
