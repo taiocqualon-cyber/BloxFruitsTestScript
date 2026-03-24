@@ -1,0 +1,52 @@
+-- LocalScript: AutoClickFrameLevel
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- ================== GUI ==================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoClickLevelGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Frame chứa nút auto click
+local ClickFrame = Instance.new("Frame")
+ClickFrame.Size = UDim2.new(0,200,0,100)
+ClickFrame.Position = UDim2.new(0,150,0,100)
+ClickFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+ClickFrame.Parent = ScreenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.Text = "Auto Level Frame"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Parent = ClickFrame
+
+local fakeLevel = 1
+local autoClickEnabled = false
+
+-- Nút toggle auto click
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0,180,0,40)
+toggleBtn.Position = UDim2.new(0,10,0,50)
+toggleBtn.Text = "Toggle Auto Click"
+toggleBtn.Parent = ClickFrame
+
+toggleBtn.MouseButton1Click:Connect(function()
+    autoClickEnabled = not autoClickEnabled
+    toggleBtn.Text = autoClickEnabled and "Auto Click: ON" or "Auto Click: OFF"
+end)
+
+-- ================== Logic Auto Click + Auto Level ==================
+RunService.RenderStepped:Connect(function()
+    if autoClickEnabled then
+        -- Local test: click frame
+        print("Frame clicked! (local test)")
+        -- Tăng level local
+        fakeLevel = fakeLevel + 0.01
+        title.Text = "Level: "..math.floor(fakeLevel)
+    end
+end)
