@@ -1,0 +1,109 @@
+-- LocalScript: MyBloxFruitsHub
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- ================== GUI Hub ==================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BloxHubGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Bóng nổi
+local HubButton = Instance.new("TextButton")
+HubButton.Size = UDim2.new(0,100,0,50)
+HubButton.Position = UDim2.new(0,20,0,100)
+HubButton.Text = "BloxHub"
+HubButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+HubButton.TextColor3 = Color3.fromRGB(255,255,255)
+HubButton.Parent = ScreenGui
+
+-- Menu Frame
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Size = UDim2.new(0,300,0,400)
+MenuFrame.Position = UDim2.new(0,140,0,100)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuFrame.Visible = false
+MenuFrame.Parent = ScreenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,50)
+title.Text = "My BloxHub"
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Parent = MenuFrame
+
+-- ================== Toggle Buttons ==================
+local function createButton(name, parent, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-20,0,50)
+    btn.Position = UDim2.new(0,10,0,50*(#parent:GetChildren()))
+    btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = name
+    btn.Parent = parent
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Biến toggle
+local autoFarm = false
+local autoChest = false
+local autoFruit = false
+local autoLevel = false
+
+createButton("Auto Farm Sea", MenuFrame, function()
+    autoFarm = not autoFarm
+    print("Auto Farm Sea:", autoFarm)
+end)
+
+createButton("Auto Nhặt Rương", MenuFrame, function()
+    autoChest = not autoChest
+    print("Auto Nhặt Rương:", autoChest)
+end)
+
+createButton("Auto Nhặt Trái", MenuFrame, function()
+    autoFruit = not autoFruit
+    print("Auto Nhặt Trái:", autoFruit)
+end)
+
+createButton("Auto Level", MenuFrame, function()
+    autoLevel = not autoLevel
+    print("Auto Level:", autoLevel)
+end)
+
+-- ================== Hub Button toggle menu ==================
+HubButton.MouseButton1Click:Connect(function()
+    MenuFrame.Visible = not MenuFrame.Visible
+end)
+
+-- ================== Logic Local Test ==================
+local fakeLevel = 1
+
+RunService.RenderStepped:Connect(function()
+    -- Auto Farm test
+    if autoFarm then
+        -- Local movement example
+        rootPart.CFrame = rootPart.CFrame + Vector3.new(0,0,1) * 0.5
+    end
+
+    -- Auto Chest test
+    if autoChest then
+        -- Tạo hiệu ứng nhặt rương local
+        print("Nhặt rương (local test)")
+    end
+
+    -- Auto Fruit test
+    if autoFruit then
+        -- Tạo hiệu ứng nhặt trái
+        print("Nhặt trái (local test)")
+    end
+
+    -- Auto Level test
+    if autoLevel then
+        fakeLevel = fakeLevel + 0.01
+        title.Text = "Level Local: "..math.floor(fakeLevel)
+    end
+end)
