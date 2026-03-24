@@ -1,0 +1,35 @@
+-- LocalScript chạy trên server test
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- GUI log
+local PlayerGui = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "FruitScanner"
+
+local LogBox = Instance.new("TextLabel", ScreenGui)
+LogBox.Position = UDim2.new(0,20,0,50)
+LogBox.Size = UDim2.new(0,300,0,200)
+LogBox.Text = "Tìm trái cây...\n"
+
+-- Hàm scan
+local function scanFruits()
+    local found = {}
+    for _, item in pairs(Workspace:GetChildren()) do
+        if item.Name == "Fruit" or item.Name == "SpecialFruit" then
+            table.insert(found, item.Name .. " tại vị trí: " .. tostring(item.Position))
+        end
+    end
+    if #found == 0 then
+        LogBox.Text = "Không có trái nào trong server test."
+    else
+        LogBox.Text = "Trái tìm thấy:\n" .. table.concat(found, "\n")
+    end
+end
+
+-- Scan liên tục
+while true do
+    scanFruits()
+    wait(5)
+end
