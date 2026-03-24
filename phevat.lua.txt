@@ -1,0 +1,126 @@
+-- Ultimate Admin Farm Hub – Server Script
+-- Chạy trực tiếp server-side, admin có thể farm mọi NPC và nhận quest
+-- Đặt trong ServerScriptService
+
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ===== Cấu hình Admin =====
+local adminPlayerNames = {"TênAdmin1","TênAdmin2"} -- chỉnh tên admin
+local farmNPCNames = {"Bandit","Pirate","Marine","Zombie"} -- NPC farm
+local collectItems = {"Chest","Fruit"} -- tên các item auto nhặt
+
+-- ===== Toggle =====
+local autoFarm = true
+local autoQuest = true
+local autoCollect = true
+local autoSea = true
+local autoFly = true
+
+-- ===== Danh sách đảo Sea (admin tùy chỉnh) =====
+local seaIslands = {Vector3.new(100,10,200),Vector3.new(500,10,300),Vector3.new(900,10,100)}
+
+-- ===== Hàm kiểm tra admin =====
+local function isAdmin(player)
+    return table.find(adminPlayerNames, player.Name) ~= nil
+end
+
+-- ===== Hàm kiểm tra NPC farm =====
+local function isFarmNPC(npc)
+    return table.find(farmNPCNames, npc.Name) ~= nil
+end
+
+-- ===== Hàm attack NPC =====
+local function attackNPC(npc)
+    if npc and npc:FindFirstChild("Humanoid") then
+        npc.Humanoid:TakeDamage(9999) -- damage cực mạnh
+    end
+end
+
+-- ===== Hàm nhận quest =====
+local function acceptQuest()
+    local questFolder = Workspace:FindFirstChild("Quests")
+    if questFolder then
+        for _, q in pairs(questFolder:GetChildren()) do
+            if q:FindFirstChild("Status") and q.Status.Value == "Available" then
+                q.Status.Value = "Accepted"
+            end
+        end
+    end
+end
+
+-- ===== Hàm nhặt item =====
+local function collectNearbyItems(player)
+    local character = player.Character
+    if not character then return end
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    for _, item in pairs(Workspace:GetDescendants()) do
+        if item:IsA("Part") and table.find(collectItems, item.Name) then
+            local distance = (item.Position - rootPart.Position).Magnitude
+            if distance < 150 then
+                item.CFrame = rootPart.CFrame + Vector3.new(0,3,0) -- teleport item gần player
+            end
+        end
+    end
+end
+
+-- ===== Hàm di chuyển / fly =====
+local function flyPlayer(player)
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+        local hrp = character.HumanoidRootPart
+        hrp.Anchored = false
+        -- fly cơ bản: tăng Y để bay
+        hrp.CFrame = hrp.CFrame + Vector3.new(0,5,0)
+    end
+end
+
+-- ===== Main Loop =====
+RunService.Heartbeat:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        if isAdmin(player) then
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = character.HumanoidRootPart
+
+                -- Auto Quest
+                if autoQuest then
+                    acceptQuest()
+                end
+
+                -- Auto Farm NPC
+                if autoFarm then
+                    for _, npc in pairs(Workspace:GetDescendants()) do
+                        if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and isFarmNPC(npc) then
+                            -- Di chuyển gần NPC
+                            rootPart.CFrame = CFrame.new(npc.HumanoidRootPart.Position + Vector3.new(0,3,0))
+                            attackNPC(npc)
+                        end
+                    end
+                end
+
+                -- Auto Collect
+                if autoCollect then
+                    collectNearbyItems(player)
+                end
+
+                -- Auto Sea
+                if autoSea then
+                    for _, pos in pairs(seaIslands) do
+                        rootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
+                        acceptQuest() -- auto nhận quest trên đảo
+                    end
+                end
+
+                -- Auto Fly
+                if autoFly then
+                    flyPlayer(player)
+                end
+            end
+        end
+    end
+end)
