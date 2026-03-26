@@ -1,0 +1,50 @@
+-- Demo VIP Hub - Safe Server
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- GUI
+local PlayerGui = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "VIPDemoHub"
+
+local toggleBtn = Instance.new("TextButton", ScreenGui)
+toggleBtn.Size = UDim2.new(0,180,0,50)
+toggleBtn.Position = UDim2.new(0,20,0,50)
+toggleBtn.Text = "Auto Collect: OFF"
+
+local autoCollect = false
+toggleBtn.MouseButton1Click:Connect(function()
+	autoCollect = not autoCollect
+	toggleBtn.Text = "Auto Collect: "..(autoCollect and "ON" or "OFF")
+end)
+
+-- Rương giả
+local chestNames = {"Chest", "TreasureChest"}
+
+-- Auto collect loop
+RunService.RenderStepped:Connect(function()
+	if autoCollect then
+		for _, chest in pairs(Workspace:GetDescendants()) do
+			if table.find(chestNames, chest.Name) and chest:IsA("Model") and chest:FindFirstChild("Handle") then
+				-- Tween đến rương mượt
+				local targetPos = chest.Handle.Position + Vector3.new(0,3,0)
+				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+				local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(targetPos)})
+				tween:Play()
+				tween.Completed:Wait()
+
+				-- Collect rương (demo safe)
+				chest:Destroy()
+			end
+		end
+	end
+end)
