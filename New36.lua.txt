@@ -1,0 +1,86 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- ==== Cấu hình ====
+local targetNPCs = {"Bandit","Yeti"} -- quái cần fram
+local chestNames = {"Chest"}          -- tên rương
+local attackDamage = 5                -- damage mỗi lần
+local autoAttackEnabled = true        -- bật/tắt auto attack
+local autoCollectEnabled = true       -- bật/tắt auto collect
+local tweenSpeed = 0.2                -- tốc độ di chuyển (số càng nhỏ càng nhanh)
+local collectRange = 20               -- phạm vi nhặt rương
+
+-- ==== GUI đơn giản ====
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0,200,0,120)
+Frame.Position = UDim2.new(0,50,0,50)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+
+local function AddToggle(title, default, callback)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(1, -10, 0, 30)
+    btn.Position = UDim2.new(0,5,0, (#Frame:GetChildren()-1)*35)
+    btn.Text = title .. ": " .. (default and "ON" or "OFF")
+    btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.MouseButton1Click:Connect(function()
+        default = not default
+        btn.Text = title .. ": " .. (default and "ON" or "OFF")
+        callback(default)
+    end)
+end
+
+AddToggle("Auto Attack", autoAttackEnabled, function(v) autoAttackEnabled = v end)
+AddToggle("Auto Collect", autoCollectEnabled, function(v) autoCollectEnabled = v end)
+
+-- ==== Auto Attack + Collect Loop ====
+RunService.RenderStepped:Connect(function()
+    if character and rootPart then
+        -- Auto Fram quái
+        if autoAttackEnabled then
+            for _, npc in pairs(Workspace:GetDescendants()) do
+                if npc:IsA("Model") and table.find(targetNPCs, npc.Name) and npc:FindFirstChild("HumanoidRootPart") then
+                    -- Tween di chuyển
+                    local targetPos = npc.HumanoidRootPart.Position + Vector3.new(0,3,0)
+                    local tween = TweenService:Create(rootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+                    tween:Play()
+                    tween.Completed:Wait()
+                    -- Tấn công
+                    if npc:FindFirstChild("Humanoid") then
+                        npc.Humanoid:TakeDamage(attackDamage)
+                    end
+                end
+            end
+        end
+
+        -- Auto Collect rương
+        if autoCollectEnabled then
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("Model") and table.find(chestNames, obj.Name) and obj:FindFirstChild("HumanoidRootPart") then
+                    if (rootPart.Position - obj.HumanoidRootPart.Position).Magnitude <= collectRange then
+                        local tween = TweenService:Create(rootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = CFrame.new(obj.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        -- Chạm rương để collect
+                        if obj:FindFirstChild("TouchInterest") then
+                            firetouchinterest(rootPart,obj.TouchInterest,0)
+                            firetouchinterest(rootPart,obj.TouchInterest,1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+]])()
