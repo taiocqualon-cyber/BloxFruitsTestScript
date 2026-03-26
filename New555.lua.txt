@@ -1,0 +1,121 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Settings
+local targetNPCs = {"Bandit","Yeti"} -- Quái cần fram
+local chestNames = {"Chest"}          -- Tên rương
+local attackDamage = 5
+local tweenSpeed = 0.2
+local collectRange = 20
+local autoAttackEnabled = false
+local autoCollectEnabled = false
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0,250,0,50)
+MainFrame.Position = UDim2.new(0,50,0,50)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local toggleBtn = Instance.new("TextButton", MainFrame)
+toggleBtn.Size = UDim2.new(1,0,0,50)
+toggleBtn.Text = "Open Menu"
+toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+
+local TabsFrame = Instance.new("Frame", MainFrame)
+TabsFrame.Size = UDim2.new(1,0,0,200)
+TabsFrame.Position = UDim2.new(0,0,1,0)
+TabsFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+TabsFrame.Visible = false
+
+toggleBtn.MouseButton1Click:Connect(function()
+    TabsFrame.Visible = not TabsFrame.Visible
+end)
+
+-- Tab1: Auto Fram
+local Tab1Btn = Instance.new("TextButton", TabsFrame)
+Tab1Btn.Size = UDim2.new(1,0,0,40)
+Tab1Btn.Position = UDim2.new(0,0,0,0)
+Tab1Btn.Text = "Auto Fram Quái"
+Tab1Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+Tab1Btn.TextColor3 = Color3.new(1,1,1)
+
+local Tab1Toggle = Instance.new("TextButton", TabsFrame)
+Tab1Toggle.Size = UDim2.new(1,0,0,30)
+Tab1Toggle.Position = UDim2.new(0,0,0,50)
+Tab1Toggle.Text = "OFF"
+Tab1Toggle.BackgroundColor3 = Color3.fromRGB(100,100,100)
+Tab1Toggle.TextColor3 = Color3.new(1,1,1)
+Tab1Toggle.MouseButton1Click:Connect(function()
+    autoAttackEnabled = not autoAttackEnabled
+    Tab1Toggle.Text = autoAttackEnabled and "ON" or "OFF"
+end)
+
+-- Tab2: Auto Collect
+local Tab2Btn = Instance.new("TextButton", TabsFrame)
+Tab2Btn.Size = UDim2.new(1,0,0,40)
+Tab2Btn.Position = UDim2.new(0,0,0,90)
+Tab2Btn.Text = "Auto Collect Rương"
+Tab2Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+Tab2Btn.TextColor3 = Color3.new(1,1,1)
+
+local Tab2Toggle = Instance.new("TextButton", TabsFrame)
+Tab2Toggle.Size = UDim2.new(1,0,0,30)
+Tab2Toggle.Position = UDim2.new(0,0,0,130)
+Tab2Toggle.Text = "OFF"
+Tab2Toggle.BackgroundColor3 = Color3.fromRGB(100,100,100)
+Tab2Toggle.TextColor3 = Color3.new(1,1,1)
+Tab2Toggle.MouseButton1Click:Connect(function()
+    autoCollectEnabled = not autoCollectEnabled
+    Tab2Toggle.Text = autoCollectEnabled and "ON" or "OFF"
+end)
+
+-- Main loop
+RunService.RenderStepped:Connect(function()
+    if character and rootPart then
+        -- Auto Fram
+        if autoAttackEnabled then
+            for _, npc in pairs(Workspace:GetDescendants()) do
+                if npc:IsA("Model") and table.find(targetNPCs, npc.Name) and npc:FindFirstChild("HumanoidRootPart") then
+                    local targetPos = npc.HumanoidRootPart.Position + Vector3.new(0,3,0)
+                    local tween = TweenService:Create(rootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame=CFrame.new(targetPos)})
+                    tween:Play()
+                    tween.Completed:Wait()
+                    if npc:FindFirstChild("Humanoid") then
+                        npc.Humanoid:TakeDamage(attackDamage)
+                    end
+                end
+            end
+        end
+        -- Auto Collect
+        if autoCollectEnabled then
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("Model") and table.find(chestNames, obj.Name) and obj:FindFirstChild("HumanoidRootPart") then
+                    if (rootPart.Position - obj.HumanoidRootPart.Position).Magnitude <= collectRange then
+                        local tween = TweenService:Create(rootPart, TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame=CFrame.new(obj.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        if obj:FindFirstChild("TouchInterest") then
+                            firetouchinterest(rootPart,obj.TouchInterest,0)
+                            firetouchinterest(rootPart,obj.TouchInterest,1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+]])()
