@@ -1,0 +1,43 @@
+local attackBtn = Instance.new("TextButton", ScreenGui)
+attackBtn.Size = UDim2.new(0,180,0,50)
+attackBtn.Position = UDim2.new(0,20,0,230)
+attackBtn.Text = "Auto Attack: OFF"
+
+attackBtn.MouseButton1Click:Connect(function()
+    attackEnabled = not attackEnabled
+    attackBtn.Text = "Auto Attack: " .. (attackEnabled and "ON" or "OFF")
+end) 
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Tên quái muốn tấn công
+local npcNames = {"Bandit", "Pirate", "SeaSoldier"} -- đổi theo server test
+
+-- Toggle attack
+local attackEnabled = true -- true bật auto attack
+
+-- Main loop auto attack
+RunService.RenderStepped:Connect(function()
+    if attackEnabled then
+        for _, npc in pairs(Workspace:GetDescendants()) do
+            if npc:IsA("Model") and table.find(npcNames, npc.Name) and npc:FindFirstChild("HumanoidRootPart") then
+                -- Di chuyển gần quái
+                local targetPos = npc.HumanoidRootPart.Position + Vector3.new(0,3,0)
+                rootPart.CFrame = CFrame.new(targetPos)
+                
+                -- Demo attack safe: chỉ giảm máu nhỏ (hoặc call function attack)
+                if npc:FindFirstChild("Humanoid") then
+                    npc.Humanoid:TakeDamage(5) -- demo safe, damage nhỏ
+                end
+            end
+        end
+    end
+end)
