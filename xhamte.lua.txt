@@ -1,0 +1,45 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- GUI
+local PlayerGui = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "ChestCollectorHub"
+
+local collectBtn = Instance.new("TextButton", ScreenGui)
+collectBtn.Size = UDim2.new(0,150,0,50)
+collectBtn.Position = UDim2.new(0,20,0,50)
+collectBtn.Text = "Auto Collect Rương: OFF"
+
+local autoCollect = false
+collectBtn.MouseButton1Click:Connect(function()
+	autoCollect = not autoCollect
+	collectBtn.Text = "Auto Collect Rương: "..(autoCollect and "ON" or "OFF")
+end)
+
+-- Rương demo
+local chestNames = {"Chest", "TreasureChest"}
+
+RunService.RenderStepped:Connect(function()
+	if autoCollect then
+		for _, chest in pairs(Workspace:GetDescendants()) do
+			if table.find(chestNames, chest.Name) and chest:IsA("Model") and chest:FindFirstChild("Handle") then
+				local targetPos = chest.Handle.Position + Vector3.new(0,3,0)
+				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+				local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(targetPos)})
+				tween:Play()
+				tween.Completed:Wait()
+				
+				-- Collect rương (demo)
+				chest:Destroy()
+			end
+		end
+	end
+end)
