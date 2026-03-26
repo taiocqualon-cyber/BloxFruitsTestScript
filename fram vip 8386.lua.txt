@@ -1,0 +1,90 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+local Players,Workspace,ReplicatedStorage,TweenService=game:GetService("Players"),game:GetService("Workspace"),game:GetService("ReplicatedStorage"),game:GetService("TweenService")
+local player,char=Players.LocalPlayer,Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+local root,char=char:WaitForChild("HumanoidRootPart"),char
+local humanoid=char:WaitForChild("Humanoid")
+
+-- ===== Cấu hình =====
+local QuestName="Bandit Quest Gi"
+local TargetNPCs={"Bandit [Lv.5]","Yeti [Lv.15]"}
+local meleeRemote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("meleeEvent")
+local attackInterval=0.05
+local tweenSpeed=0.2
+local attackRange=25
+local autoAttack,autoQuest,autoCollect=false,false,true
+
+-- ===== Nhận quest =====
+local function acceptQuest()
+    local questRemote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("QuestRemote")
+    if questRemote then questRemote:FireServer(QuestName) end
+end
+
+-- ===== GUI hình tròn =====
+local ScreenGui=Instance.new("ScreenGui",game.CoreGui)
+local Frame=Instance.new("Frame",ScreenGui)
+Frame.Size=UDim2.new(0,220,0,220)
+Frame.Position=UDim2.new(0.5,-110,0.5,-110)
+Frame.BackgroundColor3=Color3.fromRGB(30,30,30)
+Frame.Active=true
+Frame.Draggable=true
+local function createButton(name,posY,callback)
+    local btn=Instance.new("TextButton",Frame)
+    btn.Size=UDim2.new(0,200,0,30)
+    btn.Position=UDim2.new(0,10,0,posY)
+    btn.Text=name
+    btn.BackgroundColor3=Color3.fromRGB(70,70,70)
+    btn.TextColor3=Color3.new(1,1,1)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+createButton("Toggle Auto Quest",0,function() autoQuest=not autoQuest end)
+createButton("Toggle Auto Attack",40,function() autoAttack=not autoAttack end)
+createButton("Toggle Auto Collect",80,function() autoCollect=not autoCollect end)
+createButton("Close Menu",120,function() Frame.Visible=false end)
+
+-- ===== Attack =====
+local function attack(npc)
+    if npc:FindFirstChild("HumanoidRootPart") then
+        if meleeRemote then
+            meleeRemote:FireServer(npc.HumanoidRootPart.Position)
+        else
+            if npc:FindFirstChild("Humanoid") then npc.Humanoid:TakeDamage(5) end
+        end
+    end
+end
+
+-- ===== Collect rương/trái =====
+local function collectItems()
+    for _, item in pairs(Workspace:GetDescendants()) do
+        if item:IsA("Model") and autoCollect and (item.Name:find("Chest") or item.Name:find("Fruit")) then
+            if item:FindFirstChild("HumanoidRootPart") then
+                local tween=TweenService:Create(root,TweenInfo.new(0.5,Enum.EasingStyle.Linear),{CFrame=CFrame.new(item.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                tween:Play()
+            end
+        end
+    end
+end
+
+-- ===== Main loop =====
+spawn(function()
+    while true do
+        task.wait(attackInterval)
+        if autoQuest then acceptQuest() end
+        if autoAttack then
+            for _, npc in pairs(Workspace:GetDescendants()) do
+                if npc:IsA("Model") and table.find(TargetNPCs,npc.Name) and npc:FindFirstChild("HumanoidRootPart") then
+                    local dist=(root.Position - npc.HumanoidRootPart.Position).Magnitude
+                    if dist<=attackRange then
+                        attack(npc)
+                        local tween=TweenService:Create(root,TweenInfo.new(tweenSpeed,Enum.EasingStyle.Linear),{CFrame=CFrame.new(npc.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                        tween:Play()
+                    end
+                end
+            end
+        end
+        collectItems()
+    end
+end)
+]])()
