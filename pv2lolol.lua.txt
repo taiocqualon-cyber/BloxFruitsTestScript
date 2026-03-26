@@ -1,0 +1,59 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+local Players,Workspace,ReplicatedStorage,TweenService=game:GetService("Players"),game:GetService("Workspace"),game:GetService("ReplicatedStorage")
+local player,char=Players.LocalPlayer,Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+local root,char=char:WaitForChild("HumanoidRootPart"),char
+local humanoid=char:WaitForChild("Humanoid")
+local meleeRemote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("meleeEvent")
+local attackInterval=0.05
+local autoAttack=false
+local attackDistance=3
+
+-- ===== GUI =====
+local ScreenGui=Instance.new("ScreenGui",game.CoreGui)
+local Frame=Instance.new("Frame",ScreenGui)
+Frame.Size=UDim2.new(0,150,0,80)
+Frame.Position=UDim2.new(0.5,-75,0.5,-40)
+Frame.BackgroundColor3=Color3.fromRGB(30,30,30)
+Frame.Active=true
+Frame.Draggable=true
+
+local Button=Instance.new("TextButton",Frame)
+Button.Size=UDim2.new(0,140,0,40)
+Button.Position=UDim2.new(0,5,0,5)
+Button.Text="Toggle Attack Players"
+Button.BackgroundColor3=Color3.fromRGB(70,70,70)
+Button.TextColor3=Color3.new(1,1,1)
+Button.MouseButton1Click:Connect(function() autoAttack=not autoAttack end)
+
+-- ===== Hàm attack liên tục =====
+local function attack(target)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetRoot = target.Character.HumanoidRootPart
+        -- Dịch chuyển gần target
+        root.CFrame = targetRoot.CFrame + Vector3.new(0,0,attackDistance)
+        -- Auto melee liên tục
+        if meleeRemote then
+            meleeRemote:FireServer(targetRoot.Position)
+        else
+            if target.Character:FindFirstChild("Humanoid") then
+                target.Character.Humanoid:TakeDamage(10)
+            end
+        end
+    end
+end
+
+-- ===== Main loop =====
+spawn(function()
+    while true do
+        task.wait(attackInterval)
+        if autoAttack then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player then
+                    attack(plr)
+                end
+            end
+        end
+    end
+end)
+]])()
