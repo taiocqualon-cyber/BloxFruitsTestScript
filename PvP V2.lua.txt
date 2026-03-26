@@ -1,0 +1,82 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+local Players,ReplicatedStorage=game:GetService("Players"),game:GetService("ReplicatedStorage")
+local player,char=Players.LocalPlayer,Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+local root=char:WaitForChild("HumanoidRootPart")
+local meleeRemote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("meleeEvent")
+local attackInterval=0.05
+local autoAttack=false
+local attackDistance=3
+local targetPlayer=nil
+
+-- ===== GUI =====
+local ScreenGui=Instance.new("ScreenGui",game.CoreGui)
+local Frame=Instance.new("Frame",ScreenGui)
+Frame.Size=UDim2.new(0,220,0,300)
+Frame.Position=UDim2.new(0.5,-110,0.5,-150)
+Frame.BackgroundColor3=Color3.fromRGB(30,30,30)
+Frame.Active=true
+Frame.Draggable=true
+
+local Button=Instance.new("TextButton",Frame)
+Button.Size=UDim2.new(0,200,0,40)
+Button.Position=UDim2.new(0,10,0,10)
+Button.Text="Auto Attack: OFF"
+Button.BackgroundColor3=Color3.fromRGB(70,70,70)
+Button.TextColor3=Color3.new(1,1,1)
+Button.MouseButton1Click:Connect(function()
+    autoAttack=not autoAttack
+    Button.Text="Auto Attack: "..(autoAttack and "ON" or "OFF")
+end)
+
+-- ===== Tạo danh sách người chơi =====
+local yPos=60
+local function refreshPlayers()
+    for _, obj in pairs(Frame:GetChildren()) do
+        if obj:IsA("TextButton") and obj.Name=="PlayerBtn" then obj:Destroy() end
+    end
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr~=player then
+            local plrBtn=Instance.new("TextButton",Frame)
+            plrBtn.Name="PlayerBtn"
+            plrBtn.Size=UDim2.new(0,200,0,30)
+            plrBtn.Position=UDim2.new(0,10,0,yPos)
+            yPos=yPos+35
+            plrBtn.Text=plr.Name
+            plrBtn.BackgroundColor3=Color3.fromRGB(90,90,90)
+            plrBtn.TextColor3=Color3.new(1,1,1)
+            plrBtn.MouseButton1Click:Connect(function()
+                targetPlayer=plr
+            end)
+        end
+    end
+end
+refreshPlayers()
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(refreshPlayers)
+
+-- ===== Hàm attack liên tục =====
+local function attack(target)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetRoot=target.Character.HumanoidRootPart
+        root.CFrame=targetRoot.CFrame+Vector3.new(0,0,attackDistance)
+        if meleeRemote then
+            meleeRemote:FireServer(targetRoot.Position)
+        else
+            if target.Character:FindFirstChild("Humanoid") then
+                target.Character.Humanoid:TakeDamage(10)
+            end
+        end
+    end
+end
+
+-- ===== Main loop =====
+spawn(function()
+    while true do
+        task.wait(attackInterval)
+        if autoAttack and targetPlayer then
+            attack(targetPlayer)
+        end
+    end
+end)
+]])()
