@@ -1,0 +1,43 @@
+-- LocalScript chạy trong server test
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- ===== GUI toggle =====
+local PlayerGui = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "ChestCollectorHub"
+
+local collectBtn = Instance.new("TextButton", ScreenGui)
+collectBtn.Size = UDim2.new(0,150,0,50)
+collectBtn.Position = UDim2.new(0,20,0,50)
+collectBtn.Text = "Auto Collect Rương: OFF"
+
+local autoCollect = false
+collectBtn.MouseButton1Click:Connect(function()
+	autoCollect = not autoCollect
+	collectBtn.Text = "Auto Collect Rương: "..(autoCollect and "ON" or "OFF")
+end)
+
+-- ===== Scan và nhặt rương =====
+local chestNames = {"Chest", "TreasureChest"} -- tên các rương giả
+
+RunService.RenderStepped:Connect(function()
+	if autoCollect then
+		for _, chest in pairs(Workspace:GetDescendants()) do
+			if table.find(chestNames, chest.Name) then
+				-- teleport cực nhanh đến rương
+				if chest:IsA("Model") and chest:FindFirstChild("Handle") then
+					rootPart.CFrame = chest.Handle.CFrame + Vector3.new(0,3,0)
+					-- collect rương (demo: destroy để biểu thị nhặt)
+					chest:Destroy()  
+				end
+			end
+		end
+	end
+end)
