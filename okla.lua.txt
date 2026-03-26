@@ -1,0 +1,95 @@
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+-- GUI
+local PlayerGui = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "VIPDemoHub"
+
+local function createButton(text, pos)
+	local btn = Instance.new("TextButton", ScreenGui)
+	btn.Size = UDim2.new(0,180,0,50)
+	btn.Position = pos
+	btn.Text = text
+	return btn
+end
+
+-- Buttons
+local flyBtn = createButton("Fly: OFF", UDim2.new(0,20,0,50))
+local autoCollectBtn = createButton("Auto Collect: OFF", UDim2.new(0,20,0,110))
+local autoQuestBtn = createButton("Auto Quest: OFF", UDim2.new(0,20,0,170))
+
+local flyEnabled = false
+local autoCollect = false
+local autoQuest = false
+
+flyBtn.MouseButton1Click:Connect(function()
+	flyEnabled = not flyEnabled
+	flyBtn.Text = "Fly: "..(flyEnabled and "ON" or "OFF")
+end)
+
+autoCollectBtn.MouseButton1Click:Connect(function()
+	autoCollect = not autoCollect
+	autoCollectBtn.Text = "Auto Collect: "..(autoCollect and "ON" or "OFF")
+end)
+
+autoQuestBtn.MouseButton1Click:Connect(function()
+	autoQuest = not autoQuest
+	autoQuestBtn.Text = "Auto Quest: "..(autoQuest and "ON" or "OFF")
+end)
+
+-- Rương demo
+local chestNames = {"Chest", "TreasureChest"}
+
+-- Main loop
+RunService.RenderStepped:Connect(function()
+	-- Fly nhẹ mượt
+	if flyEnabled then
+		local moveDir = Vector3.new(0,0,0)
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + workspace.CurrentCamera.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - workspace.CurrentCamera.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - workspace.CurrentCamera.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + workspace.CurrentCamera.CFrame.RightVector end
+
+		rootPart.Velocity = moveDir * 30 -- nhẹ như đi bộ
+		humanoid.PlatformStand = true
+	else
+		humanoid.PlatformStand = false
+	end
+
+	-- Auto collect rương
+	if autoCollect then
+		for _, chest in pairs(Workspace:GetDescendants()) do
+			if table.find(chestNames, chest.Name) and chest:IsA("Model") and chest:FindFirstChild("Handle") then
+				local targetPos = chest.Handle.Position + Vector3.new(0,3,0)
+				local tween = TweenService:Create(rootPart, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+				tween:Play()
+				tween.Completed:Wait()
+				chest:Destroy()
+			end
+		end
+	end
+
+	-- Auto quest demo (chỉ log, không ảnh hưởng server)
+	if autoQuest then
+		for _, npc in pairs(Workspace:GetDescendants()) do
+			if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc.Name:match("QuestNPC") then
+				-- Demo: di chuyển gần NPC
+				local targetPos = npc:GetPrimaryPartCFrame().Position + Vector3.new(0,3,0)
+				local tween = TweenService:Create(rootPart, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+				tween:Play()
+				tween.Completed:Wait()
+			end
+		end
+	end
+end)
