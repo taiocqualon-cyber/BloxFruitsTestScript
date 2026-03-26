@@ -1,0 +1,102 @@
+loadstring([[
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+local humanoid = char:WaitForChild("Humanoid")
+
+-- ==== Cấu hình ====
+local NPCs = {"Bandit","Yeti"} -- Quái cần fram
+local Chests = {"Chest"}       -- Rương/trái
+local attackInterval = 0.1
+local tweenSpeed = 0.2
+local collectRange = 20
+
+local autoAttack = false
+local autoCollect = false
+
+-- ==== GUI Hình Tròn ====
+local ScreenGui = Instance.new("ScreenGui",game.CoreGui)
+local Frame = Instance.new("Frame",ScreenGui)
+Frame.Size = UDim2.new(0,200,0,200)
+Frame.Position = UDim2.new(0.5,-100,0.5,-100)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Frame.Active = true
+Frame.Draggable = true
+
+local function createButton(name,posY,callback)
+    local btn = Instance.new("TextButton",Frame)
+    btn.Size = UDim2.new(0,180,0,30)
+    btn.Position = UDim2.new(0,10,0,posY)
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+createButton("Toggle Auto Attack",0,function()
+    autoAttack = not autoAttack
+end)
+
+createButton("Toggle Auto Collect",40,function()
+    autoCollect = not autoCollect
+end)
+
+createButton("Close Menu",80,function()
+    Frame.Visible = false
+end)
+
+-- ==== Hàm Attack ====
+local function attack(npc)
+    if npc:FindFirstChild("HumanoidRootPart") then
+        local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("meleeEvent")
+        if remote then
+            remote:FireServer(npc.HumanoidRootPart.Position)
+        else
+            if npc:FindFirstChild("Humanoid") then
+                npc.Humanoid:TakeDamage(5)
+            end
+        end
+    end
+end
+
+-- ==== Main Loop ====
+spawn(function()
+    while true do
+        task.wait(attackInterval)
+        if autoAttack then
+            for _, npc in pairs(Workspace:GetDescendants()) do
+                if npc:IsA("Model") and table.find(NPCs,npc.Name) then
+                    attack(npc)
+                    if npc:FindFirstChild("HumanoidRootPart") then
+                        local tween = TweenService:Create(root,TweenInfo.new(tweenSpeed,Enum.EasingStyle.Linear),{CFrame=CFrame.new(npc.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                        tween:Play()
+                    end
+                end
+            end
+        end
+        if autoCollect then
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("Model") and table.find(Chests,obj.Name) and obj:FindFirstChild("HumanoidRootPart") then
+                    if (root.Position - obj.HumanoidRootPart.Position).Magnitude <= collectRange then
+                        local tween = TweenService:Create(root,TweenInfo.new(tweenSpeed,Enum.EasingStyle.Linear),{CFrame=CFrame.new(obj.HumanoidRootPart.Position + Vector3.new(0,3,0))})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        if obj:FindFirstChild("TouchInterest") then
+                            firetouchinterest(root,obj.TouchInterest,0)
+                            firetouchinterest(root,obj.TouchInterest,1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+]])()
