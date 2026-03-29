@@ -1,0 +1,83 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+   Name = "👹 GHOST SNIFFER V1300",
+   LoadingTitle = "Đang truy xuất cấu trúc vật thể hình tròn...",
+   ConfigurationSaving = {Enabled = false}
+})
+
+_G.DeepScan = false
+
+-- [[ HÀM HACK SERVER - NHẬN DIỆN VẬT THỂ HÌNH TRÒN 100% ]] --
+function GetEverySingleEgg()
+    local EggsFound = {}
+    -- Quét toàn bộ Descendants để tìm trong các Folder ẩn (nil parent)
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") and v:FindFirstChild("TouchInterest") then
+            -- 1. Lọc theo kích thước trứng trong ảnh bạn gửi (Nhỏ và gọn)
+            local s = v.Size
+            if (s.X > 1 and s.X < 6) and (s.Y > 1 and s.Y < 8) then
+                -- 2. Kiểm tra tên: Phải chứa các từ khóa sự kiện bạn đã liệt kê
+                local n = v.Name:lower()
+                if n:find("egg") or n:find("indra") or n:find("rocket") or n:find("moon") or n:find("hacker") then
+                    table.insert(EggsFound, v)
+                end
+            end
+        end
+    end
+    return EggsFound
+end
+
+local Tab = Window:CreateTab("📡 Hack Server Data", 4483362458)
+
+Tab:CreateToggle({
+   Name = "HIỆN ESP TRỨNG THẬT (KHÔNG HIỆN CỘT)",
+   CurrentValue = false,
+   Callback = function(V)
+      _G.DeepScan = V
+      if not V then
+          -- Xóa sạch ESP khi tắt
+          for _, v in pairs(game:GetDescendants()) do
+              if v:FindFirstChild("GhostSniffer") then v.GhostSniffer:Destroy() end
+          end
+      end
+   end,
+})
+
+-- [[ VÒNG LẶP QUÉT VÀ VẼ ESP CƯỠNG CHẾ ]] --
+spawn(function()
+    while task.wait(1) do
+        if _G.DeepScan then
+            local targets = GetEverySingleEgg()
+            for _, e in pairs(targets) do
+                if not e:FindFirstChild("GhostSniffer") then
+                    -- Vẽ khung phát sáng màu Đỏ rực (Highlight)
+                    local hl = Instance.new("Highlight", e)
+                    hl.Name = "GhostSniffer"
+                    hl.FillColor = Color3.fromRGB(255, 0, 0)
+                    hl.AlwaysOnTop = true
+
+                    -- Bảng tên và khoảng cách
+                    local bg = Instance.new("BillboardGui", e)
+                    bg.Name = "GhostText"
+                    bg.AlwaysOnTop = true
+                    bg.Size = UDim2.new(0, 150, 0, 50)
+                    bg.StudsOffset = Vector3.new(0, 4, 0)
+
+                    local tl = Instance.new("TextLabel", bg)
+                    tl.Size = UDim2.new(1, 0, 1, 0)
+                    tl.BackgroundTransparency = 1
+                    tl.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    tl.TextScaled = true
+                    
+                    spawn(function()
+                        while e and e.Parent and _G.DeepScan do
+                            local d = (e.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                            tl.Text = "🥚 " .. e.Name:upper() .. " [" .. math.floor(d) .. "m]"
+                            task.wait(0.5)
+                        end
+                    end)
+                end
+            end
+        end
+    end
+end)
