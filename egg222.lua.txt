@@ -1,0 +1,105 @@
+--[[ 
+    GHOST - CANDY SUPREMACY (VERSION 2.0)
+    - TÍNH NĂNG: Auto nhặt Candy Egg (Đứng yên), Fix Lag 60 FPS.
+    - GIAO DIỆN: Icon mở/đóng, Nút Bật/Tắt (Draggable UI).
+]]
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Player = game:GetService("Players").LocalPlayer
+local HRP = Player.Character:WaitForChild("HumanoidRootPart")
+local RS = game:GetService("RunService")
+
+_G.AutoCollect = false
+
+-- 1. TẠO GIAO DIỆN (GUI)
+local sg = Instance.new("ScreenGui", Player.PlayerGui)
+sg.Name = "GhostCandyUI"
+sg.ResetOnSpawn = false
+
+-- NÚT ICON MỞ/ĐÓNG (DRAGGABLE)
+local icon = Instance.new("ImageButton", sg)
+icon.Name = "GhostIcon"
+icon.Size = UDim2.new(0, 50, 0, 50)
+icon.Position = UDim2.new(0.1, 0, 0.1, 0)
+icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+icon.Image = "rbxassetid://6031068433" -- Icon Ghost/Skull
+Instance.new("UICorner", icon).CornerRadius = Radius.new(0, 10)
+icon.Draggable = true -- Có thể kéo đi khắp màn hình
+
+-- KHUNG MENU CHÍNH
+local menu = Instance.new("Frame", sg)
+menu.Name = "MainMenu"
+menu.Size = UDim2.new(0, 200, 0, 120)
+menu.Position = UDim2.new(0.5, -100, 0.4, 0)
+menu.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+menu.Visible = false -- Mặc định ẩn
+Instance.new("UICorner", menu)
+
+local title = Instance.new("TextLabel", menu)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "GHOST - EGG COLLECTOR"
+title.TextColor3 = Color3.new(1, 0, 1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.SourceSansBold
+
+-- NÚT BẬT/TẮT CHỨC NĂNG
+local toggleBtn = Instance.new("TextButton", menu)
+toggleBtn.Size = UDim2.new(0.8, 0, 0.4, 0)
+toggleBtn.Position = UDim2.new(0.1, 0, 0.4, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+toggleBtn.Text = "OFF"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", toggleBtn)
+
+-- 2. LOGIC MỞ/ĐÓNG MENU
+icon.MouseButton1Click:Connect(function()
+    menu.Visible = not menu.Visible
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    _G.AutoCollect = not _G.AutoCollect
+    toggleBtn.Text = _G.AutoCollect and "ON" or "OFF"
+    toggleBtn.BackgroundColor3 = _G.AutoCollect and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+end)
+
+-- 3. LOGIC HÚT TRỨNG (ĐỨNG YÊN)
+task.spawn(function()
+    while true do
+        if _G.AutoCollect then
+            pcall(function()
+                for _, v in pairs(workspace:GetChildren()) do
+                    -- Tìm vật thể Candy Egg (Check tên chính xác của Event)
+                    if v.Name:find("Candy") or v.Name:find("Egg") then
+                        local part = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            -- Ép vật lý: Hút về người
+                            part.CFrame = HRP.CFrame
+                            -- Gửi lệnh nhặt
+                            firetouchinterest(HRP, part, 0)
+                            task.wait()
+                            firetouchinterest(HRP, part, 1)
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.1) -- Quét liên tục 10 lần/giây
+    end
+end)
+
+-- 4. FIX LAG 60 FPS (TỰ ĐỘNG CHẠY NGẦM)
+task.spawn(function()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    setfpscap(60)
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.CastShadow = false
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v:Destroy()
+        end
+    end
+end)
+
+print("👿 GHOST SUPREMACY: UI LOADED. NHẤN ICON ĐỂ ĐIỀU KHIỂN!")
