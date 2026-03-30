@@ -1,0 +1,77 @@
+--[[ 
+    GHOST - DELTA NITRO (60 FPS UNLOCKED)
+    - TỐI ƯU: ÉP 60 FPS, Tắt 3D Rendering (Tùy chọn), Xóa Texture.
+    - DÀNH CHO: Delta Executor (Android).
+]]
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local function DeltaMaxPerformance()
+    local RunS = game:GetService("RunService")
+    local Lighting = game:GetService("Lighting")
+
+    -- 1. UNLOCK & LOCK 60 FPS (ÉP CỨNG KHUNG HÌNH)
+    if setfpscap then
+        setfpscap(60) 
+    end
+
+    -- 2. TẮT RENDERING 3D KHI MỚI DÁN (ĐỂ MÁY MÁT NHẤT)
+    RunS:Set3dRenderingEnabled(false) 
+
+    -- 3. HẠ CẤP ĐỒ HỌA SÂU (GIỮ 60 FPS ỔN ĐỊNH)
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+            v.CastShadow = false
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v:Destroy()
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            v.Enabled = false
+        end
+    end
+
+    -- 4. XỬ LÝ ÁNH SÁNG & SƯƠNG MÙ
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    for _, effect in pairs(Lighting:GetChildren()) do
+        if effect:IsA("PostEffect") or effect:IsA("BloomEffect") or effect:IsA("BlurEffect") then
+            effect.Enabled = false
+        end
+    end
+end
+
+-- THỰC THI
+pcall(DeltaMaxPerformance)
+
+-- GIAO DIỆN ĐIỀU KHIỂN
+local Player = game:GetService("Players").LocalPlayer
+local sg = Instance.new("ScreenGui", Player.PlayerGui)
+local btn = Instance.new("TextButton", sg)
+btn.Size = UDim2.new(0, 200, 0, 50)
+btn.Position = UDim2.new(0.5, -100, 0.4, 0)
+btn.Text = "BẬT 3D (60 FPS MODE)"
+btn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", btn)
+
+-- CƠ CHẾ DỌN RÁC GIỮ FPS KHÔNG DROP
+task.spawn(function()
+    while task.wait(1) do
+        if collectgarbage then collectgarbage("collect") end
+    end
+end)
+
+btn.MouseButton1Click:Connect(function()
+    local state = not game:GetService("RunService"):Get3dRenderingEnabled()
+    game:GetService("RunService"):Set3dRenderingEnabled(state)
+    btn.Text = state and "TẮT 3D (TIẾT KIỆM PIN)" or "BẬT 3D (60 FPS MODE)"
+    btn.BackgroundColor3 = state and Color3.fromRGB(100, 0, 0) or Color3.fromRGB(0, 100, 0)
+    -- Đảm bảo khi bật lại 3D vẫn khóa 60 FPS
+    if setfpscap then setfpscap(60) end
+end)
+
+print("👿 GHOST DELTA: 60 FPS UNLOCKED. SIÊU MƯỢT, SIÊU MÁT.")
