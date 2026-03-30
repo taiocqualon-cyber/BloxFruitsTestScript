@@ -1,0 +1,59 @@
+--[[ 
+    GHOST - STATIONARY EGG SUCKER
+    - CƠ CHẾ: Đứng yên một chỗ, tự động hút Candy Egg về nhân vật.
+    - ƯU ĐIỂM: Không bị check bay (Anti-Cheat), không giật lag.
+]]
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Player = game:GetService("Players").LocalPlayer
+local HRP = Player.Character:WaitForChild("HumanoidRootPart")
+local Workspace = game:GetService("Workspace")
+
+_G.StandStillEgg = true -- Bật/Tắt nhặt trứng
+
+-- HÀM HÚT TRỨNG VỀ VỊ TRÍ NHÂN VẬT
+local function SuckEggs()
+    for _, item in pairs(Workspace:GetChildren()) do
+        -- Tìm kiếm các vật phẩm liên quan đến Candy hoặc Egg
+        if item.Name:lower():find("egg") or item.Name:lower():find("candy") then
+            local targetPart = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart")
+            
+            if targetPart then
+                -- 1. ÉP VẬT PHẨM VỀ TỌA ĐỘ CỦA BẠN (BRING ITEM)
+                targetPart.CFrame = HRP.CFrame
+                
+                -- 2. GỬI TÍN HIỆU CHẠM (FIRE TOUCH)
+                -- Lệnh này lừa Server rằng bạn và quả trứng đang chạm nhau
+                firetouchinterest(HRP, targetPart, 0)
+                task.wait()
+                firetouchinterest(HRP, targetPart, 1)
+                
+                -- 3. NẾU LÀ MODEL THÌ DI CHUYỂN CẢ MODEL
+                if item:IsA("Model") then
+                    item:SetPrimaryPartCFrame(HRP.CFrame)
+                end
+            end
+        end
+    end
+end
+
+-- VÒNG LẶP HÚT TRỨNG LIÊN TỤC
+task.spawn(function()
+    while _G.StandStillEgg do
+        local success, err = pcall(SuckEggs)
+        if not success then warn("Lỗi hút trứng: " .. err) end
+        task.wait(0.1) -- Tốc độ hút cực nhanh
+    end
+end)
+
+-- GIAO DIỆN THÔNG BÁO
+local sg = Instance.new("ScreenGui", Player.PlayerGui)
+local l = Instance.new("TextLabel", sg)
+l.Size, l.Position = UDim2.new(0, 200, 0, 30), UDim2.new(0.5, -100, 0.05, 0)
+l.BackgroundColor3, l.TextColor3 = Color3.fromRGB(0, 50, 0), Color3.new(1, 1, 1)
+l.Text = "🥚 GHOST: STAND & SUCK EGG ON"
+l.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", l)
+
+print("👿 GHOST: ĐÃ KÍCH HOẠT CHẾ ĐỘ ĐỨNG YÊN HÚT TRỨNG. HÃY KIỂM TRA TÚI ĐỒ!")
